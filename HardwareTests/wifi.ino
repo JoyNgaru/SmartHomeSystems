@@ -3,74 +3,79 @@
 #include <WiFiUdp.h>
 #include <DHT.h>
 
-// Replace with your network credentials
-const char* ssid     = "Nana";
-const char* password = "qwertyuiop";
+// Pin definitions
+#define DHTPIN 4          // Pin connected to the DHT sensor
+#define DHTTYPE DHT22     // DHT 22 (AM2302) sensor type
 
-// Define NTP Client to get time
+// Wi-Fi credentials
+const char* ssid     = "Wifi_name";   // Replace with your Wi-Fi SSID
+const char* password = "wifi_password";   // Replace with your Wi-Fi password
+
+// NTP client settings
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600, 60000); // Offset by 3600 seconds (1 hour for GMT+1)
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 10800);  // UTC +3 for Nairobi
 
-// DHT sensor setup
-#define DHTPIN 4         // Pin where the DHT sensor is connected
-#define DHTTYPE DHT22    // DHT 22 (AM2302) sensor type, use DHT11 if you're using a DHT11 sensor
+// Initialize the DHT22 sensor
 DHT dht(DHTPIN, DHTTYPE);
 
-// Variables to save date, time, temperature, and humidity
-String timeStamp;
-float temperature;
-float humidity;
+// Variables to store temperature and humidity
+float temperature = 0.0;
+float humidity = 0.0;
 
 void setup() {
-  // Initialize Serial Monitor
+  // Start Serial Monitor
   Serial.begin(115200);
+  
+  // Initialize DHT22 sensor
+  dht.begin();
+
+  // Connect to Wi-Fi
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  
   WiFi.begin(ssid, password);
+  
+  // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   
-  Serial.println("");
-  Serial.println("WiFi connected.");
+  Serial.println("\nWiFi connected.");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-
-  // Initialize NTPClient to get time
+  
+  // Initialize NTP client for time
   timeClient.begin();
-
-  // Initialize DHT sensor
-  dht.begin();
+  timeClient.setTimeOffset(10800);  // UTC +3 for Nairobi
 }
 
 void loop() {
   // Update time from NTP server
   timeClient.update();
-
-  // Get formatted time (HH:MM:SS)
-  timeStamp = timeClient.getFormattedTime();
   
-  // Read temperature and humidity from DHT sensor
+  // Get temperature and humidity readings from the DHT22
   temperature = dht.readTemperature();
   humidity = dht.readHumidity();
   
-  // Check if any reads failed and exit early (to try again)
+  // Check if any readings failed and exit loop if so
   if (isnan(temperature) || isnan(humidity)) {
     Serial.println("Failed to read from DHT sensor!");
     return;
   }
 
-  // Print the time, temperature, and humidity
-  Serial.print("Time: ");
-  Serial.println(timeStamp);
+  // Get the current timestamp from NTP server
+  String formattedTime = timeClient.getFormattedTime();
+  
+  // Print temperature, humidity, and timestamp to Serial Monitor
+  Serial.print("Timestamp: ");
+  Serial.println(formattedTime);
   Serial.print("Temperature: ");
   Serial.print(temperature);
-  Serial.println("°C");
+  Serial.println(" °C");
   Serial.print("Humidity: ");
   Serial.print(humidity);
-  Serial.println("%");
-
-  delay(2000); // Wait for 2 seconds before updating the readings
+  Serial.println(" %");
+  
+  // Wait before reading again
+  delay(5000);  // Update every 5 seconds
 }
