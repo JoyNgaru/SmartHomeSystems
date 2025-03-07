@@ -1,4 +1,3 @@
-Here’s a structured **README.md** file for your **SmartHomeSystems** project. It provides a clear explanation of the project’s purpose, setup, components, and how to collaborate using GitHub.
 
 ---
 
